@@ -185,6 +185,14 @@ MIGraphXExecutionProvider::MIGraphXExecutionProvider(const MIGraphXExecutionProv
   // this stream for all ops, enabling end-to-end HIP graph capture.
   if (info.user_compute_stream != nullptr) {
     stream_ = static_cast<hipStream_t>(info.user_compute_stream);
+    // When Triton provides an external compute stream (via cuda { graphs: true }),
+    // automatically enable HIP graph capture on that stream so the full
+    // H2D -> compute -> D2H pipeline can be captured end-to-end.
+    // This is the key enabler: without this, setting user_compute_stream
+    // fixes stream synchronization but does not activate graph capture.
+    hip_graph_enable_ = true;
+    LOGS_DEFAULT(INFO) << "[MIGraphX EP] External stream set: auto-enabling "
+                          "HIP graph capture for end-to-end capture.";
   }
 
   // Verify configuration correctness and adjust accordingly.
